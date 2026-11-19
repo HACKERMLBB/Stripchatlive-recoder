@@ -38,7 +38,6 @@ def get_m3u8():
 def download():
     url = request.json.get("url")
     try:
-        # Remove old file if exists
         if os.path.exists("downloads/video.mp4"):
             os.remove("downloads/video.mp4")
         with yt_dlp.YoutubeDL({'outtmpl': 'downloads/video.mp4', 'format': 'best'}) as ydl:
