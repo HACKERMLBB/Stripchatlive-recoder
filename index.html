@@ -1,59 +1,150 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Baba Player ❤️</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamX ✨ - Watch Anything</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-body{ background:#1a1a1a; color:white; text-align:center; font-family:sans-serif; }
-input{ width:80%; padding:12px; border-radius:10px; border:none; }
-button{ padding:12px 20px; background:#ff4da6; color:white; border:none; border-radius:10px; margin:5px; }
-video{ width:90%; max-width:800px; margin-top:20px; border-radius:15px; background:black; }
-#downloadBtn{ display:none; background:#00d166; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body {
+        background: #0a0a12;
+        background-image: radial-gradient(circle at 20% 20%, #2b1055 0%, transparent 50%),
+                          radial-gradient(circle at 80% 80%, #7597de 0%, transparent 50%);
+        color: #fff;
+        min-height: 100vh;
+        padding: 20px;
+        text-align: center;
+    }
+    .logo { font-size: 38px; font-weight: 800; margin-top: 15px; letter-spacing: 1px; }
+    .logo span { background: linear-gradient(90deg, #ff3d81, #a855f7, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: #a1a1aa; font-size: 14px; margin: 5px 0 25px; }
+    .search-box {
+        max-width: 750px; margin: 0 auto; background: rgba(255,255,255,0.08);
+        backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.15);
+        padding: 8px; border-radius: 50px; display: flex; gap: 8px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+    .search-box input {
+        flex: 1; background: transparent; border: none; outline: none;
+        color: #fff; padding: 12px 20px; font-size: 15px;
+    }
+    .search-box input::placeholder { color: #888; }
+    .btn-play {
+        background: linear-gradient(90deg, #ff3d81, #a855f7); color: #fff;
+        border: none; padding: 12px 30px; border-radius: 50px;
+        font-weight: 700; font-size: 15px; cursor: pointer;
+    }
+    .btn-play:hover { transform: scale(1.05); }
+    .quick-btns { margin: 18px 0; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .quick-btns button {
+        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+        color: #fff; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 13px;
+    }
+    .quick-btns button:hover { background: rgba(255,255,255,0.2); }
+    .player-wrap {
+        max-width: 900px; margin: 10px auto; border-radius: 20px; overflow: hidden;
+        background: #000; border: 1px solid rgba(255,255,255,0.15);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6); position: relative;
+    }
+    video { width: 100%; aspect-ratio: 16/9; display: block; background: #000; }
+    .empty-state {
+        position: absolute; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 10px; background: #000;
+    }
+    .empty-state span { font-size: 60px; }
+    .empty-state p { color: #888; font-size: 14px; }
+    #title { font-weight: 600; font-size: 17px; margin: 18px 0 5px; min-height: 24px; }
+    #status { font-size: 13px; color: #22d3ee; min-height: 18px; }
+    .features { max-width: 900px; margin: 25px auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .feat { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; }
+    .feat b { display: block; font-size: 14px; margin-bottom: 3px; }
+    .feat p { font-size: 12px; color: #a1a1aa; }
+    .footer { margin-top: 20px; font-size: 12px; color: #666; }
+    @media(max-width: 600px){ .features{grid-template-columns: 1fr;} .logo{font-size: 30px;} }
 </style>
 </head>
 <body>
-<h2>Hi Baba! 🥰 Link eka danna</h2>
-<input id="link" placeholder="Link eka methana danna...">
-<br><br>
-<button onclick="playVideo()">▶️ Play</button>
-<button id="downloadBtn" onclick="downloadVideo()">⬇️ Download</button>
-<br>
-<video id="video" controls></video>
+
+<div class="logo">🎬 Stream<span>X</span> ✨</div>
+<p class="subtitle">Paste any link • Watch instantly in HD • No limits 🚀</p>
+
+<div class="search-box">
+    <input id="urlInput" placeholder="🔗 Paste video link here...">
+    <button class="btn-play" onclick="playVideo()">▶ Play</button>
+</div>
+
+<div class="quick-btns">
+    <button onclick="setSample('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8')">🎥 Sample Video</button>
+    <button onclick="pasteLink()">📋 Paste</button>
+    <button onclick="clearAll()">🗑️ Clear</button>
+</div>
+
+<div class="player-wrap">
+    <video id="video" controls autoplay playsinline></video>
+    <div id="empty" class="empty-state">
+        <span>🍿</span>
+        <h3>Ready to Watch?</h3>
+        <p>Paste a link above and hit Play!</p>
+    </div>
+</div>
+
+<p id="title">✨ Your video will appear here</p>
 <p id="status"></p>
 
+<div class="features">
+    <div class="feat"><b>⚡ Super Fast</b><p>Instant m3u8 extraction via yt-dlp</p></div>
+    <div class="feat"><b>🎞️ Full HD Quality</b><p>No 480p limit - Best quality as-is</p></div>
+    <div class="feat"><b>📱 All Devices</b><p>Works on Mobile, PC & iPhone</p></div>
+</div>
+
+<p class="footer">Made with ❤️ • StreamX © 2026</p>
+
 <script>
-let currentUrl = "";
-async function playVideo(){
-  currentUrl = document.getElementById("link").value;
-  document.getElementById("status").innerText = "Load wenawa baba... ❤️";
-  let res = await fetch("/get_m3u8", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({url: currentUrl})});
-  let data = await res.json();
-  if(data.m3u8){
-    let video = document.getElementById("video");
-    if(Hls.isSupported()){
-      let hls = new Hls();
-      hls.loadSource(data.m3u8);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, ()=> video.play());
-    } else if(video.canPlayType('application/vnd.apple.mpegurl')){
-      video.src = data.m3u8;
-      video.play();
+    var video = document.getElementById('video');
+    var hls;
+
+    function setSample(url){ document.getElementById('urlInput').value = url; playVideo(); }
+    async function pasteLink(){ try{ let t = await navigator.clipboard.readText(); document.getElementById('urlInput').value = t; }catch(e){ alert("Please paste manually 😊"); } }
+    function clearAll(){ document.getElementById('urlInput').value = ""; video.pause(); video.removeAttribute('src'); video.load(); document.getElementById('empty').style.display = 'flex'; }
+
+    async function playVideo() {
+        var url = document.getElementById('urlInput').value.trim();
+        if (!url) return alert("Please paste a link first! 🔗");
+
+        document.getElementById('status').innerText = "🔍 Finding best stream... Please wait...";
+        document.getElementById('empty').style.display = 'none';
+
+        try {
+            var res = await fetch('/get_m3u8', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url: url})
+            });
+            var data = await res.json();
+            if (data.error) { document.getElementById('status').innerText = "❌ " + data.error; return; }
+
+            var m3u8 = data.m3u8;
+            document.getElementById('title').innerText = "🎬 Now Playing: " + (data.title || "Your Video");
+            document.getElementById('status').innerText = "✅ Streaming in Best Quality - Enjoy! 🍿";
+
+            if (Hls.isSupported()) {
+                if (hls) hls.destroy();
+                hls = new Hls();
+                hls.loadSource(m3u8);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = m3u8;
+                video.play();
+            } else {
+                video.src = m3u8;
+            }
+        } catch(e) {
+            document.getElementById('status').innerText = "❌ Something went wrong! Try again!";
+        }
     }
-    document.getElementById("status").innerText = "Play wenawa baba! 🥰";
-    document.getElementById("downloadBtn").style.display = "inline-block";
-  } else {
-    document.getElementById("status").innerText = "Ayyo baba error: " + data.error;
-  }
-}
-async function downloadVideo(){
-  document.getElementById("status").innerText = "Download wenawa baba... tikak inna ❤️";
-  let res = await fetch("/download", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({url: currentUrl})});
-  let blob = await res.blob();
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "baba_video.mp4";
-  a.click();
-}
 </script>
 </body>
   </html>
