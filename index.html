@@ -57,6 +57,8 @@
         box-shadow: 0 5px 20px rgba(0,114,255,0.35); white-space: nowrap;
     }
     .btn-download:hover { transform: scale(1.05); }
+    .btn-download.waiting { background: linear-gradient(90deg, #ffb800, #ff6a00); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{transform: scale(1)} 50%{transform: scale(1.05)} }
     .quick-btns { margin: 16px 0; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
     .quick-btns button {
         background: #fff; border: 1px solid #ffe0ec; color: #555;
@@ -81,18 +83,19 @@
     .empty-state p { color: #fff; font-size: 14px; font-weight: 600; }
     #title { font-weight: 700; font-size: 18px; margin: 18px 0 5px; color: #333; min-height: 24px; }
     #status { font-size: 13px; color: #ff3d81; font-weight: 600; min-height: 18px; }
-    .auto-box {
+    .waiting-box {
         max-width: 600px; margin: 14px auto; background: #fff; padding: 14px 18px;
         border-radius: 20px; border: 2px solid #ffe0ec; box-shadow: 0 5px 20px rgba(255,61,129,0.12);
-        text-align: left; display: flex; align-items: center; gap: 12px;
+        display: none; align-items: center; gap: 12px; text-align: left;
     }
-    .auto-box input { transform: scale(1.6); accent-color: #ff3d81; cursor: pointer; }
-    .auto-box b { font-size: 14px; color: #ff3d81; }
-    .auto-box p { font-size: 11px; color: #999; margin-top: 2px; }
-    .auto-box .emoji { font-size: 32px; }
+    .waiting-box.show { display: flex; }
+    .waiting-box .emoji { font-size: 32px; animation: bounce 1.5s infinite; }
+    .waiting-box b { font-size: 14px; color: #ff6a00; }
+    .waiting-box p { font-size: 11px; color: #999; margin-top: 2px; }
     .action-row { display: flex; justify-content: center; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
     .action-row button { padding: 12px 24px; border-radius: 50px; border: none; cursor: pointer; font-weight: 700; font-size: 14px; color: #fff; }
     .btn-dl-big { background: linear-gradient(90deg, #ff6a00, #ff3d81); box-shadow: 0 5px 20px rgba(255,61,129,0.3); }
+    .btn-dl-big.waiting { background: linear-gradient(90deg, #ffb800, #ff6a00); animation: pulse 1s infinite; }
     .btn-share { background: linear-gradient(90deg, #a855f7, #22d3ee); box-shadow: 0 5px 20px rgba(168,85,247,0.3); }
     .btn-copy { background: #fff; color: #555 !important; border: 1px solid #eee !important; box-shadow: 0 3px 10px rgba(0,0,0,0.05); }
     .features { max-width: 900px; margin: 20px auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
@@ -101,19 +104,19 @@
     .feat b { display: block; font-size: 13px; margin: 6px 0 3px; }
     .feat p { font-size: 11px; color: #888; line-height: 1.4; }
     .footer { margin-top: 20px; font-size: 12px; color: #999; }
-    @media(max-width: 600px){ .features{grid-template-columns: repeat(2, 1fr);} .logo{font-size: 38px;} .btn-download{display:none;} .auto-box{margin: 14px 10px;} }
+    @media(max-width: 600px){ .features{grid-template-columns: repeat(2, 1fr);} .logo{font-size: 38px;} .btn-download{display:none;} }
 </style>
 </head>
 <body>
 
 <div class="top-badge">✨ 🌈 NO.1 CUTE PLAYER 🌈 ✨</div>
 <div class="logo">🎬 Stream<span>X</span> 🍭</div>
-<p class="subtitle">Paste any link • Watch instantly • <b>Download too!</b> 🧡💗💜💙</p>
+<p class="subtitle">Paste any link • Watch instantly • <b>Auto Download After Live!</b> 🧡💗💜💙</p>
 
 <div class="search-box">
     <input id="urlInput" placeholder="🔗 Paste video link here... ✨">
     <button class="btn-play" onclick="playVideo()">▶️ Play</button>
-    <button class="btn-download" onclick="downloadVideo()">⬇️ Download</button>
+    <button class="btn-download" id="topDownloadBtn" onclick="queueDownload()">⬇️ Download</button>
 </div>
 
 <div class="quick-btns">
@@ -135,19 +138,17 @@
 <p id="title">✨🎬 Your video will appear here 🎬✨</p>
 <p id="status">💖 Waiting for your link... 💖</p>
 
-<div class="auto-box">
-    <div class="emoji">⬇️💖</div>
+<div id="waitingBox" class="waiting-box">
+    <div class="emoji">⏳💖</div>
     <div style="flex:1;">
-        <label style="cursor:pointer;">
-            <input type="checkbox" id="autoDownload" checked> <b>Auto Download When Live Ends ⬇️✨</b>
-        </label>
-        <p>Tick this & relax! When live ends, it will download automatically! 🍿✨😴</p>
+        <b>⏳ Waiting For Live To End... Please Relax! 😴💖</b>
+        <p>Download is queued! When live ends, full video will download automatically! 🎉⬇️</p>
     </div>
-    <div style="font-size: 24px;">🎉</div>
+    <div style="font-size: 24px;">🍿</div>
 </div>
 
 <div class="action-row">
-    <button class="btn-dl-big" onclick="downloadVideo()">⬇️ 💖 Download Video 💖 ⬇️</button>
+    <button class="btn-dl-big" id="bigDownloadBtn" onclick="queueDownload()">⬇️ 💖 Download After Live Ends 💖 ⬇️</button>
     <button class="btn-share" onclick="shareLink()">🔗 Share ✨</button>
     <button class="btn-copy" onclick="copyM3U8()">📄 Copy M3U8 Link</button>
 </div>
@@ -155,7 +156,7 @@
 <div class="features">
     <div class="feat"><span>⚡</span><b>Super Fast</b><p>Instant m3u8 via yt-dlp 🚀</p></div>
     <div class="feat"><span>🎞️</span><b>Full HD</b><p>No limit! Best quality 💎</p></div>
-    <div class="feat"><span>⬇️</span><b>Auto Download</b><p>When live ends, auto save! 💖</p></div>
+    <div class="feat"><span>⬇️</span><b>Smart Download</b><p>Waits for live to end! 💖</p></div>
     <div class="feat"><span>📱</span><b>All Devices</b><p>Mobile • PC • iPhone ✨</p></div>
 </div>
 
@@ -166,25 +167,62 @@
     var hls;
     var currentM3U8 = "";
     var currentUrl = "";
+    var waitingForLiveEnd = false;
     var alreadyDownloaded = false;
 
     function setSample(){ document.getElementById('urlInput').value = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"; playVideo(); }
     async function pasteLink(){ try{ let t = await navigator.clipboard.readText(); document.getElementById('urlInput').value = t; }catch(e){ alert("Please paste manually 😊💖"); } }
-    function clearAll(){ document.getElementById('urlInput').value = ""; alreadyDownloaded = false; video.pause(); video.removeAttribute('src'); video.load(); document.getElementById('empty').style.display = 'flex'; document.getElementById('title').innerText = "✨🎬 Your video will appear here 🎬✨"; document.getElementById('status').innerText = "💖 Waiting for your link... 💖"; }
+    function clearAll(){
+        waitingForLiveEnd = false; alreadyDownloaded = false;
+        document.getElementById('waitingBox').classList.remove('show');
+        document.getElementById('topDownloadBtn').innerText = "⬇️ Download";
+        document.getElementById('topDownloadBtn').classList.remove('waiting');
+        document.getElementById('bigDownloadBtn').innerText = "⬇️ 💖 Download After Live Ends 💖 ⬇️";
+        document.getElementById('bigDownloadBtn').classList.remove('waiting');
+        document.getElementById('urlInput').value = "";
+        video.pause(); video.removeAttribute('src'); video.load();
+        document.getElementById('empty').style.display = 'flex';
+        document.getElementById('title').innerText = "✨🎬 Your video will appear here 🎬✨";
+        document.getElementById('status').innerText = "💖 Waiting for your link... 💖";
+    }
     function copyM3U8(){ if(!currentM3U8) return alert("Play a video first! 🎬💖"); navigator.clipboard.writeText(currentM3U8); alert("Copied! 📄✨"); }
     function shareLink(){ if(!currentUrl) return alert("Play a video first! 🎬"); navigator.clipboard.writeText(currentUrl); alert("Link Copied! Share it! 🔗💖"); }
 
-    // AUTO DOWNLOAD WHEN LIVE ENDS - Video Ended Event
-    video.addEventListener('ended', function() {
-        var auto = document.getElementById('autoDownload').checked;
-        if (auto && !alreadyDownloaded && currentUrl) {
-            alreadyDownloaded = true;
-            document.getElementById('status').innerText = "🎉 Live Ended! Auto Downloading... ⬇️💖 Please wait...";
-            downloadVideo();
-        } else if (!auto) {
-            document.getElementById('status').innerText = "🏁 Live Ended! Press Download to save it! 💖";
+    // STEP 1 - User Presses Download Button -> Wait For Live To End
+    function queueDownload(){
+        var url = document.getElementById('urlInput').value.trim();
+        if(!url) return alert("Paste a link first to download! 🔗⬇️");
+        currentUrl = url;
+
+        // If video already ended, download now
+        if(video.ended){
+            downloadNow();
+            return;
         }
-    });
+
+        // Otherwise - WAIT for live to end
+        waitingForLiveEnd = true;
+        document.getElementById('waitingBox').classList.add('show');
+        document.getElementById('status').innerText = "⏳💖 Download Queued! Waiting for live to end... Relax! 😴🍿";
+        document.getElementById('topDownloadBtn').innerText = "⏳ Waiting...";
+        document.getElementById('topDownloadBtn').classList.add('waiting');
+        document.getElementById('bigDownloadBtn').innerText = "⏳💖 Waiting For Live To End...💖⏳";
+        document.getElementById('bigDownloadBtn').classList.add('waiting');
+        alert("✅ Download Queued! 💖\n\nLive ends when, full video will download automatically! Relax! 😴🍿");
+    }
+
+    // STEP 2 - Live Ended -> Auto Download Full Video
+    function onLiveEnded(){
+        if(waitingForLiveEnd && !alreadyDownloaded && currentUrl){
+            alreadyDownloaded = true;
+            waitingForLiveEnd = false;
+            document.getElementById('waitingBox').classList.remove('show');
+            document.getElementById('status').innerText = "🎉 Live Ended! Downloading Full Video Now... ⬇️💖";
+            downloadNow();
+        }
+    }
+
+    video.addEventListener('ended', onLiveEnded);
 
     async function playVideo() {
         var url = document.getElementById('urlInput').value.trim();
@@ -211,16 +249,8 @@
                 hls.loadSource(m3u8);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); });
-                // If HLS stream fails / ends - Live ended detection
                 hls.on(Hls.Events.ERROR, function(event, data) {
-                    if (data.fatal) {
-                        var auto = document.getElementById('autoDownload').checked;
-                        if (auto && !alreadyDownloaded && currentUrl) {
-                            alreadyDownloaded = true;
-                            document.getElementById('status').innerText = "🎉 Live Ended! Auto Downloading... ⬇️💖";
-                            downloadVideo();
-                        }
-                    }
+                    if (data.fatal) { onLiveEnded(); }
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = m3u8; video.play();
@@ -228,10 +258,11 @@
         } catch(e) { document.getElementById('status').innerText = "❌ Oops! Something went wrong! Try again! 🥺"; }
     }
 
-    async function downloadVideo() {
-        var url = document.getElementById('urlInput').value.trim();
-        if (!url) return alert("Paste a link first to download! 🔗⬇️");
-        document.getElementById('status').innerText = "⬇️💖 Downloading... Please wait... ⏳✨";
+    // STEP 3 - Actual Download
+    async function downloadNow() {
+        var url = currentUrl || document.getElementById('urlInput').value.trim();
+        if (!url) return alert("Paste a link first! 🔗⬇️");
+        document.getElementById('status').innerText = "⬇️💖 Downloading Full Video... Please wait... ⏳✨";
         try {
             var res = await fetch('/download', {
                 method: 'POST',
@@ -245,8 +276,12 @@
             a.download = "StreamX-Video.mp4";
             a.click();
             document.getElementById('status').innerText = "✅💖 Downloaded Successfully! Enjoy! 🎉🍿";
+            document.getElementById('topDownloadBtn').innerText = "⬇️ Download";
+            document.getElementById('topDownloadBtn').classList.remove('waiting');
+            document.getElementById('bigDownloadBtn').innerText = "⬇️ 💖 Download After Live Ends 💖 ⬇️";
+            document.getElementById('bigDownloadBtn').classList.remove('waiting');
         } catch(e) { document.getElementById('status').innerText = "❌ Download failed! Try another link! 🥺"; }
     }
 </script>
 </body>
-                                                    </html>
+   </html>
