@@ -1,83 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StreamX Player</title>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<style>
-    * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
-  body { background:#12001f; color:#fff; min-height:100vh; padding:20px; text-align:center; }
-  h1 { font-size:42px; margin:10px 0; }
-  h1 span { color:#a855f7; }
-  p { color:#c4b5fd; margin-bottom:20px; }
-  .box { max-width:800px; margin:0 auto; background:rgba(255,255,255,0.08); border:1px solid #a855f7; padding:10px; border-radius:50px; display:flex; gap:10px; }
-  .box input { flex:1; background:transparent; border:none; outline:none; color:#fff; padding:12px 20px; font-size:15px; }
-  .box input::placeholder { color:#a78bfa; }
-  .box button { border:none; padding:12px 25px; border-radius:50px; font-weight:700; cursor:pointer; color:#fff; }
-  .btn-play { background:#7c3aed; }
-  .btn-dl { background:#c026d3; }
-  .player { max-width:900px; margin:20px auto; background:#000; border-radius:15px; overflow:hidden; border:2px solid #a855f7; }
-  video { width:100%; aspect-ratio:16/9; display:block; }
-  #title { margin:15px 0 5px; font-weight:700; }
-  #status { color:#c084fc; font-size:13px; }
-  .quality-row { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin:10px 0; }
-  .quality-row button { background:rgba(168,85,247,0.2); border:1px solid #a855f7; color:#fff; padding:10px 20px; border-radius:20px; cursor:pointer; font-weight:700; }
-  .quality-row button.active { background:#a855f7; color:#fff; box-shadow:0 0 15px #a855f7; }
-  .quality-row button:hover { background:#7c3aed; }
-  .quality-label { color:#c4b5fd; font-size:13px; margin-top:5px; }
-  @media(max-width:650px){ .box{flex-direction:column; border-radius:20px;} .box button{width:100%;} h1{font-size:32px;} }
-</style>
-</head>
-<body>
-
-<h1>Stream<span>X</span></h1>
-<p>Paste Link - Choose Quality - Play - Download</p>
-
-<div class="box">
-  <input id="urlInput" placeholder="Paste video link here...">
-  <button class="btn-play" onclick="playVideo()">Play</button>
-  <button class="btn-dl" onclick="downloadVideo()">Download</button>
-</div>
-
-<p class="quality-label" id="qualityLabel">Quality will appear here after you Play</p>
-<div class="quality-row" id="qualityRow"></div>
-
-<div class="player">
-  <video id="video" controls autoplay playsinline></video>
-</div>
-
-<p id="title">Your video will appear here</p>
-<p id="status">Waiting for link...</p>
-
-<script>
   var video = document.getElementById('video');
   var hls;
   var currentUrl = "";
   var allQualities = [];
   var selectedQuality = "best";
   var selectedHeight = 0;
+  var currentM3U8 = "";
+  var useProxy = false; // මුලින් Direct! Proxy නෑ!
+  var stallTimer = null;
+  var lastTime = 0;
 
   function playM3U8(m3u8){
-    var proxied = "/proxy?url=" + encodeURIComponent(m3u8);
-    console.log("Playing:", proxied);
+    currentM3U8 = m3u8;
+    // Proxy නම් Proxy URL, නැත්නම් Direct URL
+    var playUrl = useProxy ? "/proxy?url=" + encodeURIComponent(m3u8) : m3u8;
+    console.log("Playing:", useProxy ? "Via Proxy" : "Direct", playUrl);
+    document.getElementById('status').innerText = useProxy ? "Playing via Proxy..." : "Playing Direct - Fastest...";
+
     if(Hls.isSupported()){
       if(hls) hls.destroy();
-      hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60, liveSyncPosition: true });
-      hls.loadSource(proxied);
+      hls = new Hls({
+        maxBufferLength: 60, // Buffer එක ලොකු කලා! හිටින්නේ නෑ!
+        maxMaxBufferLength: 120,
+        maxBufferSize: 60 * 1000 * 1000,
+        liveSyncPosition: true,
+        liveMaxLatencyDuration: 10,
+        enableWorker: true,
+        lowLatencyMode: false // Live එක හිටින්නේ නැති වෙන්න!
+      });
+      hls.loadSource(playUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, function(){ video.play(); });
       hls.on(Hls.Events.ERROR, function(event, data){
         console.log("HLS ERROR:", data);
-        document.getElementById('status').innerText = "Error: " + data.details + " - Retrying...";
-        if(data.fatal){
-          setTimeout(function(){ hls.loadSource(proxied); }, 2000);
+        // Direct Fail වුනොත් Proxy එකට මාරු වෙනවා!
+        if(data.fatal && !useProxy){
+          console.log("Direct Failed! Trying Proxy...");
+          useProxy = true;
+          document.getElementById('status').innerText = "Direct Blocked! Trying Proxy...";
+          playM3U8(currentM3U8);
+        } else if(data.fatal && useProxy){
+          setTimeout(function(){ hls.loadSource(playUrl); }, 2000);
         }
       });
     } else {
-      video.src = proxied;
+      video.src = playUrl;
       video.play();
     }
+    startStallWatcher();
+  }
+
+  // ⭐ Video එක හිටියොත් Auto Resume කරන එක!
+  function startStallWatcher(){
+    if(stallTimer) clearInterval(stallTimer);
+    lastTime = 0;
+    stallTimer = setInterval(function(){
+      if(video.paused || video.ended) return;
+      // තත්පර 3ක් Video එක එකම තැන හිටියොත්
+      if(video.currentTime === lastTime && video.readyState < 3){
+        console.log("Stalled! Resuming...");
+        document.getElementById('status').innerText = "Buffering... Resuming...";
+        // Live එකේ අලුත්ම තැනට පනිනවා!
+        if(hls && hls.liveSyncPosition){
+          video.currentTime = hls.liveSyncPosition;
+        }
+        video.play().catch(()=>{});
+      }
+      lastTime = video.currentTime;
+    }, 3000);
   }
 
   function changeQuality(height, m3u8, btn){
@@ -85,56 +74,20 @@
     selectedQuality = height;
     document.querySelectorAll('#qualityRow button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    // Quality මාරු කරද්දි Direct වලින්ම ආයේ Try කරනවා!
+    useProxy = false;
     document.getElementById('status').innerText = "Switching to " + height + "p...";
     playM3U8(m3u8);
-    document.getElementById('status').innerText = "Playing in " + height + "p - Enjoy!";
   }
 
   async function playVideo(){
     var url = document.getElementById('urlInput').value.trim();
     if(!url) return alert("Paste a link first!");
     currentUrl = url;
+    useProxy = false; // අලුත් Video එකක් නම් Direct වලින් පටන් ගන්නවා!
     document.getElementById('status').innerText = "Loading qualities... Please wait...";
     try{
       var res = await fetch('/play', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:url})});
       var data = await res.json();
       if(data.error){ document.getElementById('status').innerText = data.error; return; }
-      document.getElementById('title').innerText = "Now Playing: " + (data.title || "Video");
-      allQualities = data.qualities || [];
-      var row = document.getElementById('qualityRow');
-      row.innerHTML = "";
-      if(allQualities.length > 0){
-        document.getElementById('qualityLabel').innerText = "Choose Quality:";
-        allQualities.forEach((q, index) => {
-          var b = document.createElement('button');
-          b.innerText = q.quality;
-          if(index === 0){ b.classList.add('active'); selectedHeight = q.height; selectedQuality = q.height; }
-          b.onclick = function(){ changeQuality(q.height, q.m3u8, b); };
-          row.appendChild(b);
-        });
-        document.getElementById('status').innerText = "Playing in " + allQualities[0].quality + " - Change quality below!";
-      } else {
-        document.getElementById('qualityLabel').innerText = "Only 1 quality found";
-      }
-      playM3U8(data.m3u8);
-    }catch(e){ document.getElementById('status').innerText = "Error! Try again!"; }
-  }
-
-  async function downloadVideo(){
-    var url = document.getElementById('urlInput').value.trim() || currentUrl;
-    if(!url) return alert("Paste a link first!");
-    document.getElementById('status').innerText = "Downloading in " + selectedQuality + "p... Please wait...";
-    try{
-      var res = await fetch('/download', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:url, quality: selectedHeight || "best"})});
-      if(!res.ok) throw new Error("Failed");
-      var blob = await res.blob();
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = "video-" + selectedQuality + "p.mp4";
-      a.click();
-      document.getElementById('status').innerText = "Downloaded in " + selectedQuality + "p Successfully!";
-    }catch(e){ document.getElementById('status').innerText = "Download failed!"; }
-  }
-</script>
-</body>
-</html>
+      document.getElementById('title').innerText = "
