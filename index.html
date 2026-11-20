@@ -48,12 +48,12 @@
   var currentUrl = "";
 
   function playM3U8(m3u8){
-    // Direct m3u8 - No Proxy!
-    console.log("Playing:", m3u8);
+    var playUrl = "/proxy?url=" + encodeURIComponent(m3u8);
+    console.log("Playing via Proxy:", playUrl);
     if(Hls.isSupported()){
       if(hls) hls.destroy();
       hls = new Hls();
-      hls.loadSource(m3u8);
+      hls.loadSource(playUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, function(){ video.play().catch(()=>{}); });
       hls.on(Hls.Events.ERROR, function(event, data){
@@ -61,7 +61,7 @@
         document.getElementById('status').innerText = "Error: " + data.details;
       });
     } else {
-      video.src = m3u8;
+      video.src = playUrl;
       video.play();
     }
   }
@@ -98,4 +98,4 @@
   }
 </script>
 </body>
-  </html>
+</html>
