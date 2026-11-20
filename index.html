@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StreamX 💜 - Watch Anything</title>
+<title>StreamX - Watch Anything</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <style>
@@ -87,13 +87,13 @@
     .btn-dl-big.waiting { background: linear-gradient(90deg, #f59e0b, #f97316); animation: pulse 1s infinite; }
     .btn-share { background: linear-gradient(90deg, #6d28d9, #9333ea); }
     .btn-copy { background: rgba(255,255,255,0.1); border: 1px solid rgba(192,132,252,0.4) !important; }
+    .btn-test { background: linear-gradient(90deg, #059669, #10b981); box-shadow: 0 5px 20px rgba(16,185,129,0.5); }
     .features { max-width: 900px; margin: 20px auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
     .feat { background: rgba(168,85,247,0.12); border: 1px solid rgba(192,132,252,0.3); padding: 16px 10px; border-radius: 20px; }
     .feat span { font-size: 28px; }
     .feat b { display: block; font-size: 13px; margin: 6px 0 3px; color: #fff; }
     .feat p { font-size: 11px; color: #c4b5fd; line-height: 1.4; }
     .footer { margin-top: 20px; font-size: 12px; color: #a78bfa; }
-    /* Mobile Friendly - Dark Purple එකේම! */
     @media(max-width: 650px){
         body { padding: 12px; }
         .logo { font-size: 36px; }
@@ -112,58 +112,59 @@
 </head>
 <body>
 
-<div class="top-badge">✨ 💜 NO.1 CUTE PLAYER 💜 ✨</div>
-<div class="logo">🎬 Stream<span>X</span> 💜</div>
-<p class="subtitle">Paste any link • Watch instantly • <b>Auto Download After Live!</b> 💜✨</p>
+<div class="top-badge">NO.1 CUTE PLAYER</div>
+<div class="logo">Stream<span>X</span></div>
+<p class="subtitle">Paste any link - Watch instantly - <b>Auto Download After Live!</b></p>
 
 <div class="search-box">
-    <input id="urlInput" placeholder="🔗 Paste video link here... ✨">
-    <button class="btn-play" onclick="playVideo()">▶️ Play</button>
-    <button class="btn-download" id="topDownloadBtn" onclick="queueDownload()">⬇️ Download</button>
+    <input id="urlInput" placeholder="Paste video link here...">
+    <button class="btn-play" onclick="playVideo()">Play</button>
+    <button class="btn-download" id="topDownloadBtn" onclick="queueDownload()">Download</button>
 </div>
 
 <div class="quick-btns">
-    <button onclick="setSample()">🎥 ✨ Try Sample</button>
-    <button onclick="pasteLink()">📋 Paste Link</button>
-    <button onclick="clearAll()">🗑️ Clear All</button>
+    <button onclick="setSample()">Try Sample</button>
+    <button onclick="pasteLink()">Paste Link</button>
+    <button onclick="clearAll()">Clear All</button>
 </div>
 
 <div class="player-wrap">
     <video id="video" controls autoplay playsinline></video>
     <div id="empty" class="empty-state">
-        <span>🍿💜</span>
-        <h3>Ready to Watch? 🥰</h3>
-        <p>Paste a link above and hit Play! ✨🎬</p>
-        <p>💜 Purple • 💜 Violet • 💜 Dark Purple • 💜 Neon</p>
+        <span>🍿</span>
+        <h3>Ready to Watch?</h3>
+        <p>Paste a link above and hit Play!</p>
+        <p>Purple - Violet - Dark Purple - Neon</p>
     </div>
 </div>
 
-<p id="title">✨🎬 Your video will appear here 🎬✨</p>
-<p id="status">💜 Waiting for your link... 💜</p>
+<p id="title">Your video will appear here</p>
+<p id="status">Waiting for your link...</p>
 
 <div id="waitingBox" class="waiting-box">
-    <div class="emoji">⏳💜</div>
+    <div class="emoji">⏳</div>
     <div style="flex:1;">
-        <b>⏳ Waiting For Live To End... Please Relax! 😴💜</b>
-        <p>Download is queued! When live ends, full video will download automatically! 🎉⬇️</p>
+        <b id="waitingTitle">Waiting For Live To End... Please Relax!</b>
+        <p id="waitingText">Download is queued! When live ends, full video will download automatically!</p>
     </div>
     <div style="font-size: 24px;">🍿</div>
 </div>
 
 <div class="action-row">
-    <button class="btn-dl-big" id="bigDownloadBtn" onclick="queueDownload()">⬇️ 💜 Download After Live Ends 💜 ⬇️</button>
-    <button class="btn-share" onclick="shareLink()">🔗 Share ✨</button>
-    <button class="btn-copy" onclick="copyM3U8()">📄 Copy M3U8 Link</button>
+    <button class="btn-dl-big" id="bigDownloadBtn" onclick="queueDownload()">Download After Live Ends</button>
+    <button class="btn-share" onclick="shareLink()">Share</button>
+    <button class="btn-copy" onclick="copyM3U8()">Copy M3U8 Link</button>
+    <button class="btn-test" id="testBtn" onclick="testDownload()">Test Download - 10 Sec</button>
 </div>
 
 <div class="features">
-    <div class="feat"><span>⚡</span><b>Super Fast</b><p>Instant m3u8 via yt-dlp 🚀</p></div>
-    <div class="feat"><span>🎞️</span><b>Full HD</b><p>No limit! Best quality 💎</p></div>
-    <div class="feat"><span>⬇️</span><b>Smart Download</b><p>Waits for live to end! 💜</p></div>
-    <div class="feat"><span>📱</span><b>All Devices</b><p>Mobile • PC • iPhone ✨</p></div>
+    <div class="feat"><span>⚡</span><b>Super Fast</b><p>Instant m3u8 via yt-dlp</p></div>
+    <div class="feat"><span>🎞️</span><b>Full HD</b><p>No limit! Best quality</p></div>
+    <div class="feat"><span>⬇️</span><b>Smart Download</b><p>Waits for live to end!</p></div>
+    <div class="feat"><span>📱</span><b>All Devices</b><p>Mobile - PC - iPhone</p></div>
 </div>
 
-<p class="footer">Made with 💜 by StreamX • © 2026 ✨💜🍇</p>
+<p class="footer">Made with Love by StreamX - 2026</p>
 
 <script>
     var video = document.getElementById('video');
@@ -174,36 +175,38 @@
     var alreadyDownloaded = false;
 
     function setSample(){ document.getElementById('urlInput').value = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"; playVideo(); }
-    async function pasteLink(){ try{ let t = await navigator.clipboard.readText(); document.getElementById('urlInput').value = t; }catch(e){ alert("Please paste manually 😊💜"); } }
+    async function pasteLink(){ try{ let t = await navigator.clipboard.readText(); document.getElementById('urlInput').value = t; }catch(e){ alert("Please paste manually"); } }
     function clearAll(){
         waitingForLiveEnd = false; alreadyDownloaded = false;
         document.getElementById('waitingBox').classList.remove('show');
-        document.getElementById('topDownloadBtn').innerText = "⬇️ Download";
+        document.getElementById('topDownloadBtn').innerText = "Download";
         document.getElementById('topDownloadBtn').classList.remove('waiting');
-        document.getElementById('bigDownloadBtn').innerText = "⬇️ 💜 Download After Live Ends 💜 ⬇️";
+        document.getElementById('bigDownloadBtn').innerText = "Download After Live Ends";
         document.getElementById('bigDownloadBtn').classList.remove('waiting');
         document.getElementById('urlInput').value = "";
         video.pause(); video.removeAttribute('src'); video.load();
         document.getElementById('empty').style.display = 'flex';
-        document.getElementById('title').innerText = "✨🎬 Your video will appear here 🎬✨";
-        document.getElementById('status').innerText = "💜 Waiting for your link... 💜";
+        document.getElementById('title').innerText = "Your video will appear here";
+        document.getElementById('status').innerText = "Waiting for your link...";
     }
-    function copyM3U8(){ if(!currentM3U8) return alert("Play a video first! 🎬💜"); navigator.clipboard.writeText(currentM3U8); alert("Copied! 📄✨"); }
-    function shareLink(){ if(!currentUrl) return alert("Play a video first! 🎬"); navigator.clipboard.writeText(currentUrl); alert("Link Copied! Share it! 🔗💜"); }
+    function copyM3U8(){ if(!currentM3U8) return alert("Play a video first!"); navigator.clipboard.writeText(currentM3U8); alert("Copied!"); }
+    function shareLink(){ if(!currentUrl) return alert("Play a video first!"); navigator.clipboard.writeText(currentUrl); alert("Link Copied! Share it!"); }
 
     function queueDownload(){
         var url = document.getElementById('urlInput').value.trim();
-        if(!url) return alert("Paste a link first to download! 🔗⬇️");
+        if(!url) return alert("Paste a link first to download!");
         currentUrl = url;
         if(video.ended){ downloadNow(); return; }
         waitingForLiveEnd = true;
         document.getElementById('waitingBox').classList.add('show');
-        document.getElementById('status').innerText = "⏳💜 Download Queued! Waiting for live to end... Relax! 😴🍿";
-        document.getElementById('topDownloadBtn').innerText = "⏳ Waiting...";
+        document.getElementById('waitingTitle').innerText = "Waiting For Live To End... Please Relax!";
+        document.getElementById('waitingText').innerText = "Download is queued! When live ends, full video will download automatically!";
+        document.getElementById('status').innerText = "Download Queued! Waiting for live to end... Relax!";
+        document.getElementById('topDownloadBtn').innerText = "Waiting...";
         document.getElementById('topDownloadBtn').classList.add('waiting');
-        document.getElementById('bigDownloadBtn').innerText = "⏳💜 Waiting For Live To End...💜⏳";
+        document.getElementById('bigDownloadBtn').innerText = "Waiting For Live To End...";
         document.getElementById('bigDownloadBtn').classList.add('waiting');
-        alert("✅ Download Queued! 💜\n\nLive ends when, full video will download automatically! Relax! 😴🍿");
+        alert("Download Queued!\n\nLive ends when, full video will download automatically! Relax!");
     }
 
     function onLiveEnded(){
@@ -211,7 +214,7 @@
             alreadyDownloaded = true;
             waitingForLiveEnd = false;
             document.getElementById('waitingBox').classList.remove('show');
-            document.getElementById('status').innerText = "🎉 Live Ended! Downloading Full Video Now... ⬇️💜";
+            document.getElementById('status').innerText = "Live Ended! Downloading Full Video Now...";
             downloadNow();
         }
     }
@@ -219,19 +222,19 @@
 
     async function playVideo() {
         var url = document.getElementById('urlInput').value.trim();
-        if (!url) return alert("Please paste a link first! 🔗💜");
+        if (!url) return alert("Please paste a link first!");
         currentUrl = url;
         alreadyDownloaded = false;
-        document.getElementById('status').innerText = "🔍✨ Finding best stream... Please wait... 🍿";
+        document.getElementById('status').innerText = "Finding best stream... Please wait...";
         document.getElementById('empty').style.display = 'none';
         try {
             var res = await fetch('/get_m3u8', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url: url}) });
             var data = await res.json();
-            if (data.error) { document.getElementById('status').innerText = "❌ " + data.error; return; }
+            if (data.error) { document.getElementById('status').innerText = data.error; return; }
             var m3u8 = data.m3u8;
             currentM3U8 = m3u8;
-            document.getElementById('title').innerText = "🎬💜 Now Playing: " + (data.title || "Your Video") + " 💜🎬";
-            document.getElementById('status').innerText = "✅ Streaming in Best Quality - Enjoy! 🍿💜✨";
+            document.getElementById('title').innerText = "Now Playing: " + (data.title || "Your Video");
+            document.getElementById('status').innerText = "Streaming in Best Quality - Enjoy!";
             if (Hls.isSupported()) {
                 if (hls) hls.destroy();
                 hls = new Hls();
@@ -241,13 +244,13 @@
                 hls.on(Hls.Events.ERROR, function(event, data) { if (data.fatal) { onLiveEnded(); } });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = m3u8; video.play(); }
             else { video.src = m3u8; }
-        } catch(e) { document.getElementById('status').innerText = "❌ Oops! Something went wrong! Try again! 🥺"; }
+        } catch(e) { document.getElementById('status').innerText = "Something went wrong! Try again!"; }
     }
 
     async function downloadNow() {
         var url = currentUrl || document.getElementById('urlInput').value.trim();
-        if (!url) return alert("Paste a link first! 🔗⬇️");
-        document.getElementById('status').innerText = "⬇️💜 Downloading Full Video... Please wait... ⏳✨";
+        if (!url) return alert("Paste a link first!");
+        document.getElementById('status').innerText = "Downloading Full Video... Please wait...";
         try {
             var res = await fetch('/download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url: url}) });
             if (!res.ok) throw new Error("Download failed");
@@ -256,13 +259,57 @@
             a.href = URL.createObjectURL(blob);
             a.download = "StreamX-Video.mp4";
             a.click();
-            document.getElementById('status').innerText = "✅💜 Downloaded Successfully! Enjoy! 🎉🍿";
-            document.getElementById('topDownloadBtn').innerText = "⬇️ Download";
+            document.getElementById('status').innerText = "Downloaded Successfully! Enjoy!";
+            document.getElementById('topDownloadBtn').innerText = "Download";
             document.getElementById('topDownloadBtn').classList.remove('waiting');
-            document.getElementById('bigDownloadBtn').innerText = "⬇️ 💜 Download After Live Ends 💜 ⬇️";
+            document.getElementById('bigDownloadBtn').innerText = "Download After Live Ends";
             document.getElementById('bigDownloadBtn').classList.remove('waiting');
-        } catch(e) { document.getElementById('status').innerText = "❌ Download failed! Try another link! 🥺"; }
+        } catch(e) { document.getElementById('status').innerText = "Download failed! Try another link!"; }
+    }
+
+    // TEST DOWNLOAD - 10 SEC
+    async function testDownload() {
+        var testUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+        var btn = document.getElementById('testBtn');
+        var count = 10;
+        btn.disabled = true;
+        document.getElementById('waitingBox').classList.add('show');
+        document.getElementById('status').innerText = "Test Started! Download in 10 Sec...";
+        var timer = setInterval(() => {
+            count--;
+            btn.innerText = "Test Downloading in " + count + "s...";
+            document.getElementById('status').innerText = "Test: " + count + " Sec left... Download starting soon...";
+            document.getElementById('waitingTitle').innerText = "Test Download in " + count + " Sec... Please Wait!";
+            document.getElementById('waitingText').innerText = "Like a live stream! After 10 Sec it will finish and download!";
+            if (count <= 0) {
+                clearInterval(timer);
+                btn.innerText = "Downloading Test Video...";
+                document.getElementById('waitingBox').classList.remove('show');
+                document.getElementById('status').innerText = "10 Sec Done! Downloading Now...";
+                downloadTestFile(testUrl);
+            }
+        }, 1000);
+    }
+
+    async function downloadTestFile(url) {
+        try {
+            var res = await fetch('/download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url: url}) });
+            if (!res.ok) throw new Error("Failed");
+            var blob = await res.blob();
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "StreamX-TEST-Video.mp4";
+            a.click();
+            document.getElementById('status').innerText = "TEST SUCCESS! Download is working!";
+            document.getElementById('testBtn').innerText = "Test Download - 10 Sec";
+            document.getElementById('testBtn').disabled = false;
+            alert("TEST SUCCESS!\n\nDownload is working!\nNow real live download will also work!");
+        } catch(e) {
+            document.getElementById('status').innerText = "Test Failed! Try again!";
+            document.getElementById('testBtn').innerText = "Test Download - 10 Sec";
+            document.getElementById('testBtn').disabled = false;
+        }
     }
 </script>
 </body>
-</html>
+   </html>
