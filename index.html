@@ -23,13 +23,7 @@ video{ width:95%; max-width:800px; margin-top:20px; border-radius:15px; backgrou
 <br>
 <div id="qualityBox">
   <span>Quality: </span>
-  <button onclick="setQuality(-1, this)" class="active">Auto ✨</button>
-  <button onclick="setQuality(1080, this)">1080p</button>
-  <button onclick="setQuality(720, this)">720p</button>
-  <button onclick="setQuality(540, this)">540p</button>
-  <button onclick="setQuality(480, this)">480p</button>
-  <button onclick="setQuality(360, this)">360p</button>
-  <button onclick="setQuality(240, this)">240p</button>
+  <span id="qualityButtons"></span>
 </div>
 <br>
 <video id="video" controls></video>
@@ -51,7 +45,11 @@ async function playVideo(){
       hls = new Hls();
       hls.loadSource(data.m3u8);
       hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, ()=> video.play());
+      hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
+        video.play();
+        // ⭐ m3u8 එකේ ඇත්තටම තියෙන Quality ටික මෙතනින් හොයනවා!
+        showRealQualities();
+      });
     } else if(video.canPlayType('application/vnd.apple.mpegurl')){
       video.src = data.m3u8;
       video.play();
@@ -64,8 +62,39 @@ async function playVideo(){
   }
 }
 
+// ⭐ m3u8 එකේ තියෙන ඇත්ත Quality ටික පෙන්නනවා!
+function showRealQualities(){
+  let box = document.getElementById("qualityButtons");
+  box.innerHTML = "";
+
+  // Auto Button එක හැමදාම
+  let autoBtn = document.createElement("button");
+  autoBtn.innerText = "Auto ✨";
+  autoBtn.classList.add("active");
+  autoBtn.onclick = function(){ setQuality(-1, autoBtn); };
+  box.appendChild(autoBtn);
+
+  // hls.levels = m3u8 එකේ තියෙන ඇත්ත Quality ටික!
+  // උදා: Live එකක 540p, 360p, 240p විතරක් තියෙනවා නම් ඒ 3 විතරයි පෙන්නන්නේ!
+  let seen = new Set();
+  hls.levels.forEach((lvl, i)=>{
+    let h = lvl.height;
+    if(!h || seen.has(h)) return;
+    seen.add(h);
+    let b = document.createElement("button");
+    b.innerText = h + "p";
+    b.onclick = function(){ setQuality(h, b); };
+    box.appendChild(b);
+  });
+
+  // m3u8 එකේ Quality එකක්වත් නැත්නම්
+  if(seen.size === 0){
+    box.innerHTML += "<span style='font-size:13px;color:#aaa;'> Quality 1i thiyenne baba! </span>";
+  }
+}
+
 function setQuality(height, btn){
-  document.querySelectorAll("#qualityBox button").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll("#qualityButtons button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   if(hls){
     if(height === -1){
