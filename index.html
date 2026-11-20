@@ -21,13 +21,21 @@
   video { width:100%; aspect-ratio:16/9; display:block; }
   #title { margin:15px 0 5px; font-weight:700; }
   #status { color:#c084fc; font-size:13px; }
+  #info { color:#a78bfa; font-size:12px; margin:5px 0; }
+  .quality-row { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin:10px 0; }
+  .quality-row button { background:rgba(168,85,247,0.2); border:1px solid #a855f7; color:#fff; padding:10px 20px; border-radius:20px; cursor:pointer; font-weight:700; }
+  .quality-row button.active { background:#a855f7; box-shadow:0 0 15px #a855f7; }
+  .quality-label { color:#c4b5fd; font-size:13px; margin-top:5px; }
+  .format-box { max-width:900px; margin:10px auto; background:rgba(255,255,255,0.05); border:1px solid #333; border-radius:15px; padding:10px; text-align:left; max-height:200px; overflow-y:auto; font-size:12px; }
+  .format-box div { padding:5px; border-bottom:1px solid #333; display:flex; justify-content:space-between; gap:10px; }
+  .format-box button { background:#7c3aed; color:#fff; border:none; padding:5px 10px; border-radius:10px; cursor:pointer; font-size:11px; }
   @media(max-width:650px){ .box{flex-direction:column; border-radius:20px;} .box button{width:100%;} h1{font-size:32px;} }
 </style>
 </head>
 <body>
 
 <h1>Stream<span>X</span></h1>
-<p>Paste Link - Play - Download</p>
+<p>Paste Link - Play - Download - All Formats</p>
 
 <div class="box">
   <input id="urlInput" placeholder="Paste video link here...">
@@ -35,29 +43,36 @@
   <button class="btn-dl" onclick="downloadVideo()">Download</button>
 </div>
 
+<p class="quality-label" id="qualityLabel">Quality will appear here after you Play</p>
+<div class="quality-row" id="qualityRow"></div>
+
 <div class="player">
   <video id="video" controls autoplay playsinline></video>
 </div>
 
 <p id="title">Your video will appear here</p>
 <p id="status">Waiting for link...</p>
+<p id="info"></p>
+
+<div class="format-box" id="formatBox" style="display:none;"></div>
 
 <script>
   var video = document.getElementById('video');
   var hls;
   var currentUrl = "";
+  var allData = null;
+  var selectedHeight = "best";
+  var selectedFormatId = "";
 
   function playM3U8(m3u8){
     var playUrl = "/proxy?url=" + encodeURIComponent(m3u8);
-    console.log("Playing via Proxy:", playUrl);
     if(Hls.isSupported()){
       if(hls) hls.destroy();
-      hls = new Hls();
+      hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60, liveSyncDurationCount: 3, enableWorker: true });
       hls.loadSource(playUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, function(){ video.play().catch(()=>{}); });
       hls.on(Hls.Events.ERROR, function(event, data){
-        console.log("HLS ERROR:", data);
         document.getElementById('status').innerText = "Error: " + data.details;
       });
     } else {
@@ -66,17 +81,68 @@
     }
   }
 
+  function changeQuality(height, m3u8, btn){
+    selectedHeight = height;
+    selectedFormatId = "";
+    document.querySelectorAll('#qualityRow button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('status').innerText = "Switching to " + height + "p...";
+    playM3U8(m3u8);
+  }
+
   async function playVideo(){
     var url = document.getElementById('urlInput').value.trim();
     if(!url) return alert("Paste a link first!");
     currentUrl = url;
-    document.getElementById('status').innerText = "Loading... Please wait...";
+    selectedHeight = "best";
+    selectedFormatId = "";
+    document.getElementById('status').innerText = "Loading all formats... Please wait...";
     try{
       var res = await fetch('/get_m3u8', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:url})});
       var data = await res.json();
       if(data.error){ document.getElementById('status').innerText = data.error; return; }
+      allData = data;
       document.getElementById('title').innerText = "Now Playing: " + (data.title || "Video");
+      document.getElementById('info').innerText = "Uploader: " + (data.uploader || "-") + " | Duration: " + (data.duration || 0) + "s | Live: " + (data.is_live ? "Yes 🔴" : "No") + " | Total Formats: " + (data.total_formats || 0);
       document.getElementById('status').innerText = "Playing... Enjoy!";
+
+      // Quality Buttons
+      var row = document.getElementById('qualityRow');
+      row.innerHTML = "";
+      var quals = data.qualities || [];
+      if(quals.length > 0){
+        document.getElementById('qualityLabel').innerText = "Choose Quality (m3u8):";
+        quals.forEach((q, index) => {
+          var b = document.createElement('button');
+          b.innerText = q.quality;
+          if(index === 0){ b.classList.add('active'); selectedHeight = q.height; }
+          b.onclick = function(){ changeQuality(q.height, q.m3u8, b); };
+          row.appendChild(b);
+        });
+      }
+
+      // All Formats List - yt-dlp වලින් හම්බවුණ ඔක්කොම!
+      var fb = document.getElementById('formatBox');
+      var all = data.all_formats || [];
+      if(all.length > 0){
+        fb.style.display = "block";
+        fb.innerHTML = "<b>All Formats from yt-dlp (" + all.length + ") - Play / Download any:</b><br><br>";
+        all.forEach(f => {
+          var d = document.createElement('div');
+          d.innerHTML = "<span>" + f.format_id + " | " + f.quality + " | " + f.ext + " | " + f.protocol + " | " + f.vcodec + " / " + f.acodec + " | " + f.fps + "fps | " + Math.round(f.tbr) + "kbps</span>";
+          var pb = document.createElement('button');
+          pb.innerText = "Play";
+          pb.onclick = function(){ selectedFormatId = f.format_id; playM3U8(f.m3u8); };
+          var db = document.createElement('button');
+          db.innerText = "Download";
+          db.style.background = "#c026d3";
+          db.onclick = function(){ downloadFormat(f.format_id); };
+          var span = document.createElement('span');
+          span.appendChild(pb); span.appendChild(db);
+          d.appendChild(span);
+          fb.appendChild(d);
+        });
+      }
       playM3U8(data.m3u8);
     }catch(e){ document.getElementById('status').innerText = "Error! Try again!"; }
   }
@@ -84,9 +150,9 @@
   async function downloadVideo(){
     var url = document.getElementById('urlInput').value.trim() || currentUrl;
     if(!url) return alert("Paste a link first!");
-    document.getElementById('status').innerText = "Downloading... Please wait...";
+    document.getElementById('status').innerText = "Downloading in " + selectedHeight + "p... Please wait...";
     try{
-      var res = await fetch('/download', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:url})});
+      var res = await fetch('/download', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:url, quality: selectedHeight, format_id: selectedFormatId})});
       if(!res.ok) throw new Error("Failed");
       var blob = await res.blob();
       var a = document.createElement('a');
@@ -96,6 +162,20 @@
       document.getElementById('status').innerText = "Downloaded Successfully!";
     }catch(e){ document.getElementById('status').innerText = "Download failed!"; }
   }
+
+  async function downloadFormat(format_id){
+    var url = document.getElementById('urlInput').value.trim() || currentUrl;
+    document.getElementById('status').innerText = "Downloading format " + format_id + "...";
+    try{
+      var res = await fetch('/download', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:url, format_id: format_id})});
+      var blob = await res.blob();
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = "StreamX-" + format_id + ".mp4";
+      a.click();
+      document.getElementById('status').innerText = "Downloaded " + format_id + " Successfully!";
+    }catch(e){ document.getElementById('status').innerText = "Download failed!"; }
+  }
 </script>
 </body>
-</html>
+   </html>
