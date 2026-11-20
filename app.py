@@ -1,6 +1,8 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response
 import yt_dlp
 import os
+import requests
+import re
 
 app = Flask(__name__)
 os.makedirs("downloads", exist_ok=True)
@@ -34,11 +36,27 @@ def get_m3u8():
     except Exception as e:
         return jsonify({"error": str(e)})
 
+@app.route("/proxy")
+def proxy():
+    m3u8_url = request.args.get("url")
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://stripchat.com/",
+        "Origin": "https://stripchat.com"
+    }
+    try:
+        r = requests.get(m3u8_url, headers=headers, timeout=15)
+        text = r.text
+        base = m3u8_url.rsplit('/', 1)[0] + '/'
+        text = re.sub(r'\n(?!#)([^\n]+)', lambda m: '\n' + (m.group(1) if m.group(1).startswith('http') else base + m.group(1)), text)
+        return Response(text, content_type="application/vnd.apple.mpegurl")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/download", methods=["POST"])
 def download():
     url = request.json.get("url")
     try:
-        # Remove old file if exists
         if os.path.exists("downloads/video.mp4"):
             os.remove("downloads/video.mp4")
         with yt_dlp.YoutubeDL({'outtmpl': 'downloads/video.mp4', 'format': 'best'}) as ydl:
