@@ -3,46 +3,47 @@ import yt_dlp
 import os
 
 app = Flask(__name__)
+os.makedirs("downloads", exist_ok=True)
 
 @app.route("/")
 def home():
     return open("index.html").read()
 
-@app.route("/play", methods=["POST"])
-def play():
+@app.route("/get_m3u8", methods=["POST"])
+def get_m3u8():
     url = request.json.get("url")
+    if ".m3u8" in url:
+        return jsonify({"m3u8": url})
     try:
         with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
             info = ydl.extract_info(url, download=False)
             if 'entries' in info and info['entries']:
                 info = info['entries'][0]
-            qualities = []
-            seen = set()
-            for f in info.get('formats', []):
+            formats = info.get('formats', [])
+            m3u8_list = []
+            for f in formats:
                 f_url = f.get('url', '')
-                height = f.get('height')
-                if ('.m3u8' in f_url or f.get('protocol') in ('m3u8', 'm3u8_native')) and height:
-                    if height not in seen:
-                        seen.add(height)
-                        qualities.append({"quality": f"{height}p", "height": height, "m3u8": f_url})
-            qualities.sort(key=lambda x: x['height'], reverse=True)
-            if not qualities:
-                return jsonify({"error": "No m3u8 found! Try another link!"})
-            return jsonify({"m3u8": qualities[0]['m3u8'], "title": info.get('title', 'Video'), "qualities": qualities})
+                protocol = f.get('protocol', '')
+                if protocol in ('m3u8_native', 'm3u8') or '.m3u8' in f_url:
+                    m3u8_list.append(f)
+            if m3u8_list:
+                m3u8_list.sort(key=lambda x: (x.get('height') or 0, x.get('tbr') or 0), reverse=True)
+                best_m3u8 = m3u8_list[0]['url']
+                return jsonify({"m3u8": best_m3u8, "title": info.get('title')})
+            return jsonify({"m3u8": info.get('url'), "title": info.get('title')})
     except Exception as e:
         return jsonify({"error": str(e)})
 
 @app.route("/download", methods=["POST"])
 def download():
     url = request.json.get("url")
-    quality = request.json.get("quality", "best")
     try:
-        if os.path.exists("video.mp4"):
-            os.remove("video.mp4")
-        fmt = "best" if quality == "best" else f"best[height<={quality}]"
-        with yt_dlp.YoutubeDL({'outtmpl': 'video.mp4', 'format': fmt}) as ydl:
+        # Remove old file if exists
+        if os.path.exists("downloads/video.mp4"):
+            os.remove("downloads/video.mp4")
+        with yt_dlp.YoutubeDL({'outtmpl': 'downloads/video.mp4', 'format': 'best'}) as ydl:
             ydl.download([url])
-        return send_file("video.mp4", as_attachment=True, download_name=f"video-{quality}p.mp4")
+        return send_file("downloads/video.mp4", as_attachment=True, download_name="StreamX-Video.mp4")
     except Exception as e:
         return jsonify({"error": str(e)})
 
