@@ -28,8 +28,7 @@ def get_m3u8():
                     m3u8_list.append(f)
             if m3u8_list:
                 m3u8_list.sort(key=lambda x: (x.get('height') or 0, x.get('tbr') or 0), reverse=True)
-                best_m3u8 = m3u8_list[0]['url']
-                return jsonify({"m3u8": best_m3u8, "title": info.get('title')})
+                return jsonify({"m3u8": m3u8_list[0]['url'], "title": info.get('title')})
             return jsonify({"m3u8": info.get('url'), "title": info.get('title')})
     except Exception as e:
         return jsonify({"error": str(e)})
