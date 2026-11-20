@@ -21,7 +21,6 @@
   video { width:100%; aspect-ratio:16/9; display:block; }
   #title { margin:15px 0 5px; font-weight:700; }
   #status { color:#c084fc; font-size:13px; }
-  /* Quality Buttons */
   .quality-row { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin:10px 0; }
   .quality-row button { background:rgba(168,85,247,0.2); border:1px solid #a855f7; color:#fff; padding:10px 20px; border-radius:20px; cursor:pointer; font-weight:700; }
   .quality-row button.active { background:#a855f7; color:#fff; box-shadow:0 0 15px #a855f7; }
@@ -41,7 +40,6 @@
   <button class="btn-dl" onclick="downloadVideo()">Download</button>
 </div>
 
-<!-- Quality Choice එක මෙතන පෙන්නනවා! -->
 <p class="quality-label" id="qualityLabel">Quality will appear here after you Play</p>
 <div class="quality-row" id="qualityRow"></div>
 
@@ -61,19 +59,27 @@
   var selectedHeight = 0;
 
   function playM3U8(m3u8){
+    var proxied = "/proxy?url=" + encodeURIComponent(m3u8);
+    console.log("Playing:", proxied);
     if(Hls.isSupported()){
       if(hls) hls.destroy();
-      hls = new Hls();
-      hls.loadSource(m3u8);
+      hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60, liveSyncPosition: true });
+      hls.loadSource(proxied);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, function(){ video.play(); });
+      hls.on(Hls.Events.ERROR, function(event, data){
+        console.log("HLS ERROR:", data);
+        document.getElementById('status').innerText = "Error: " + data.details + " - Retrying...";
+        if(data.fatal){
+          setTimeout(function(){ hls.loadSource(proxied); }, 2000);
+        }
+      });
     } else {
-      video.src = m3u8;
+      video.src = proxied;
       video.play();
     }
   }
 
-  // Quality Button එකක් ඔබපු ගමන් ඒ Quality එකෙන් Play කරනවා!
   function changeQuality(height, m3u8, btn){
     selectedHeight = height;
     selectedQuality = height;
@@ -94,8 +100,6 @@
       var data = await res.json();
       if(data.error){ document.getElementById('status').innerText = data.error; return; }
       document.getElementById('title').innerText = "Now Playing: " + (data.title || "Video");
-      
-      // Quality Buttons හදනවා!
       allQualities = data.qualities || [];
       var row = document.getElementById('qualityRow');
       row.innerHTML = "";
