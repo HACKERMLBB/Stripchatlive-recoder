@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify, send_file, Response
 import yt_dlp
 import os
-import requests
 import re
+import urllib.request
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -18,7 +19,6 @@ def play():
             info = ydl.extract_info(url, download=False)
             if 'entries' in info and info['entries']:
                 info = info['entries'][0]
-
             qualities = []
             seen = set()
             for f in info.get('formats', []):
@@ -29,41 +29,41 @@ def play():
                         seen.add(height)
                         qualities.append({"quality": f"{height}p", "height": height, "m3u8": f_url})
             qualities.sort(key=lambda x: x['height'], reverse=True)
-
             if not qualities:
                 return jsonify({"error": "No m3u8 found! Try another link!"})
             return jsonify({"m3u8": qualities[0]['m3u8'], "title": info.get('title', 'Video'), "qualities": qualities})
     except Exception as e:
         return jsonify({"error": str(e)})
 
-# Proxy - m3u8 + .ts Files Both Proxy Through Server - Fixes Spinning / CORS
+# Proxy - NO requests library! Using urllib only!
 @app.route("/proxy")
 def proxy():
     m3u8_url = request.args.get("url")
     if not m3u8_url:
         return "No URL", 400
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(m3u8_url, headers=headers, timeout=15)
-        content_type = r.headers.get('Content-Type', '')
+        req = urllib.request.Request(m3u8_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            content = r.read()
+            content_type = r.headers.get('Content-Type', '')
 
         # .ts File - Send As Is
         if '.ts' in m3u8_url or 'video' in content_type or 'octet' in content_type:
-            return Response(r.content, content_type=content_type)
+            return Response(content, content_type=content_type)
 
-        # m3u8 File - Rewrite .ts / .m3u8 URLs To Go Through Proxy
-        text = r.text
+        # m3u8 File - Rewrite .ts URLs To Proxy
+        text = content.decode('utf-8', errors='ignore')
         base = m3u8_url.rsplit('/', 1)[0] + '/'
         lines = []
         for line in text.splitlines():
             line = line.strip()
             if not line or line.startswith('#'):
                 if 'URI="' in line:
-                    line = re.sub(r'URI="([^"]+)"', lambda m: 'URI="/proxy?url=' + requests.utils.quote(m.group(1) if m.group(1).startswith('http') else base + m.group(1), safe='') + '"', line)
+                    line = re.sub(r'URI="([^"]+)"', lambda m: 'URI="/proxy?url=' + urllib.parse.quote(m.group(1) if m.group(1).startswith('http') else base + m.group(1), safe='') + '"', line)
                 lines.append(line)
             else:
                 full = line if line.startswith('http') else base + line
-                lines.append("/proxy?url=" + requests.utils.quote(full, safe=''))
+                lines.append("/proxy?url=" + urllib.parse.quote(full, safe=''))
         return Response("\n".join(lines), content_type='application/vnd.apple.mpegurl')
     except Exception as e:
         return str(e), 500
@@ -75,10 +75,7 @@ def download():
     try:
         if os.path.exists("video.mp4"):
             os.remove("video.mp4")
-        if quality == "best":
-            fmt = "best"
-        else:
-            fmt = f"best[height<={quality}]"
+        fmt = "best" if quality == "best" else f"best[height<={quality}]"
         with yt_dlp.YoutubeDL({'outtmpl': 'video.mp4', 'format': fmt}) as ydl:
             ydl.download([url])
         return send_file("video.mp4", as_attachment=True, download_name=f"video-{quality}p.mp4")
